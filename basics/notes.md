@@ -8,4 +8,12 @@ Mostly intro to the author
 
 # Okay, The Actual Basics Section
 ## Big O
-Big O is a way to categorize your algorithm's time or memory requirements based on inputs.
+Big O is a way to categorize your algorithm's time or memory requirements based on inputs. It is not meant to be an exact measurement. It will not tell you how many CPU cycles something takes, for example, but generalizes the idea of your algo's growth. 
+For example, an O(N) algo grows linearly based on input
+
+Big O is useful to help us make decisinos about what data structures and algorithms we should use. 
+Let's do a small example.
+``` 
+    fn sum_char_codes(n: &str) -> u32 {
+        
+    }

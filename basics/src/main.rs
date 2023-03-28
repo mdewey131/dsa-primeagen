@@ -1,3 +1,7 @@
+mod basic_big_o;
+use basic_big_o::*;
+
 fn main() {
-    println!("Hello, world!");
+    let sum = sum_char_codes("0123".into());
+    println!("Sum of numbers: {sum}");
 }
