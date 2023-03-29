@@ -48,3 +48,29 @@ This algorithm has a big O complexity of log N (specifically, log base 2 of N). 
 *Another helpful trick is revealed here: when doing algorithms that halve things, its usually O(log N) or O(N log N)*
 
 ### Implementing Binary Search
+Here's the function, and I confirmed that this passes tests in the crate
+```
+pub fn binary_search(haystack: &[u32], needle: u32)  -> Option<usize> {
+    let mut result: Option<usize> = None;
+    let mut low: usize = 0;
+    let mut high: usize = haystack.len();
+
+    while low < high {
+        let mid = (low + (high - low) / 2 as usize);
+        if haystack[mid] == needle {
+            result = Some(mid);
+            break;
+        } else if haystack[mid] < needle {
+            // The value we're looking for is higher, let's move the low point up to the midpoint + 1
+            low = mid + 1;
+            continue;
+        } else {
+            // The value we're looking for is lower, so we move the highpoint down to the midpoint
+            high = mid;
+        }
+
+
+    }
+    return result;
+}
+```
