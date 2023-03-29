@@ -109,4 +109,23 @@ pub fn sum_char_codes_O_n2(text: &str) -> u32 {
 }
 ```
 
+## Arrays
+Hopefully, this isn't too concerned with the TypeScript implementation
+
+The most fundamental idea is that an array is a contiguous space of memory that contains a certain amount of bytes. Because we are allocating
+the number of bytes, the computer understands that a given location is defined by an offset. For example, if array a is equal to [1,2,3], and I say
+a[1], the computer would be able to understand that it needs to look in a, which is an array which is 3 bytes long (i.e. 24 bits), and move 1 byte over.
+
+The course now talks about implementing various solutions with arrays. Let's talk about them in high level.
+Array insertion is the act of overwriting data in a given position. Because arrays are fixed size, we cannot grow an array (there are good reasons
+why we can't just do that. If we did, we'd need to reallocate every time because there's no guarantee that the next space of memory is free, which
+would cause all sorts of errors if we just willy-nilly deleted).
+
+Similarly, we can't really "delete" from an array position. We can just overwrite in a given position.
+
+So, with this in mind, let's consider: 
+
+### What is the Big O value for accessing a position in an array?
+It's constant time O(1). There's no need to walk to a position. We know the width of our array, we can just go there. 
+
 
