@@ -13,7 +13,18 @@ For example, an O(N) algo grows linearly based on input
 
 Big O is useful to help us make decisinos about what data structures and algorithms we should use. 
 Let's do a small example.
+
 ``` 
-    fn sum_char_codes(n: &str) -> u32 {
-        
+pub fn sum_char_codes(text: &str) -> u32 {
+    let mut sum = 0;
+    for i in text.chars() {
+        // Remember, rust doesn't let you just slice a string due to UTF-8 encoding 
+        // Instead, since we're sure that this is going to contain ASCII characters,
+        // we use as_bytes()
+        let adder = i.to_digit(10).expect("Please only give my numbers");
+        sum += adder;
+
     }
+    return sum;
+}
+```
