@@ -74,3 +74,18 @@ pub fn binary_search(haystack: &[u32], needle: u32)  -> Option<usize> {
     return result;
 }
 ```
+
+## Two Crystal Balls
+Here's the statement of the problem:
+"Given two crystal balls that will break if dropped from a high enough distance, determine the exact spot in which it will break in the most optimized way"
+
+Let's try and think through this problem. We can conceptualize an array of distances (ordered) in which everything that won't cause the ball to break is false, and every
+distance (i.e. index) wherein it will break is true. Linearly walking through the array is too slow for this answer, but would conceptually represent the case of using
+only one crystal ball and repeatedly dropping it until it breaks. 
+
+Binary search wouldn't work either. Suppose you drop the ball on the halfway point and it breaks. Well, shit, now you have to linear search over the lower half, which is still O(N). 
+So, can we do better? The answer is yes; we need to jump in such a way that we are not doing linear search. For example, let's say we jump the square root of N until our 
+crystal ball breaks. Then, we will do linear search from the last good point to the bad point until our second ball breaks, at which point we've solved it. What's the running time of this algo?
+
+It's O(sqrt(N)). This is because, in the worst case, we'd have to do a sqrt(N) jumps until our ball breaks, then do a search over an interval that is sqrt(N) across.
+
