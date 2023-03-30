@@ -151,4 +151,15 @@ pub struct List {
 
 type Link = Option<Box<Node>>
 ```
-Note that all the methods that used Link before need to be reworked to use the option. This is reflected in the actual script, but not replicated here.
+Note that all the methods that used Link before need to be reworked to use the option. This is reflected in the actual script, but not replicated here. Most importantly, this allows us to use stuff that Option has built in. Take `take` which is actually a method that replicates `mem::replace(&mut option, None)`. We can also use map() to simplify some of the match statements that are essentially None -> None and Some(x) -> Some(y). Finally, we're going to make the entire thing generic
+
+### Adding New Functionality with Peek
+We're going to now try to peek at an element, just attempting to see the value that comes out from the head of the list
+
+``` 
+pub fn peek(&self) -> Option<&T> {
+    self.head.map(|node| {
+        &node.elem
+    })
+}
+```

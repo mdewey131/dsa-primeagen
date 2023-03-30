@@ -2,52 +2,53 @@ use std::boxed::Box;
 use std::mem;
 
 /// The struct for the actual list element
-pub struct List {
-    head: Link
+pub struct List<T> {
+    head: Link<T>
 }
 
 /// The enum type describing the link between a Node and its following value
-type Link = Option<Box<Node>>;
+type Link<T> = Option<Box<Node<T>>>;
 
 /// The node that contains an element
-struct Node {
-    elem: i32,
-    next: Link,
+struct Node<T> {
+    elem: T,
+    next: Link<T>,
 }
 
-impl List {
+impl<T> List<T>{
     /// Initializes a new list with an empty head
     pub fn new() -> Self {
-        List {head: Link::Empty}
+        List {head: None}
     }
 
-    pub fn push(&mut self, elem: i32) {
-        // Use of replace allows us to change the value inside of the mutable reference without triggering errors from moving out of the reference
-        // This is really useful because Rust always expects us to keep the mutable reference "intact" insofar as there must be *something* valid there
+    pub fn push(&mut self, elem: T) {
         let new_node = Box::new(Node {
             elem: elem, 
-            next: mem::replace(&mut self.head, Link::Empty),
+            next: self.head.take(),
         });
 
         self.head = Some(new_node);
     }
 
     /// Remove an element from a list and give it here, Malfoy
-    pub fn pop(&mut self) -> Option<i32> {
-        // Same reasons as before, we have to do the dance here
-        match mem::replace(&mut self.head, Link::Empty) {
-            None => None,
-            Some(node) => {
-                self.head = node.next;
-                Some(node.elem)
-            }
-        }
+    pub fn pop(&mut self) -> Option<T> {
+        self.head.take().map(|node| {
+            self.head = node.next;
+            Some(node.elem)
+        }).unwrap()
     }
+
+    /// Attempts to "peek" at an element in the linked list
+    pub fn peek(&self) -> Option<&T> {
+        self.head.map(|node| {
+            &node.elem
+    })
+}
 }
 
-impl Drop for List {
+impl Drop for List<T> {
     fn drop(&mut self) {
-        let mut cur_link = mem::replace(&mut self.head, Link::Empty);
+        let mut cur_link = self.head.take();
         while let Some(mut boxed_node) = cur_link {
             cur_link = mem::replace(&mut boxed_node.next, Link::Empty);
             // boxed node then goes out of scope and gets dropped here
