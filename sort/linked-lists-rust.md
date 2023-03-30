@@ -141,4 +141,14 @@ impl Drop for List {
 ```
 
 # 2. An Ok Singly-Linked Stack
-We're going to now attempt to make a different kind of singly linked stack, and make it less sucky. 
+We're going to now attempt to make a different kind of singly linked stack, and make it less sucky.
+
+First, our use of Link from before is basically just a reinvention of Option. That's not particularly good, so we can improve that using aliases!
+```
+pub struct List {
+    head: Link
+}
+
+type Link = Option<Box<Node>>
+```
+Note that all the methods that used Link before need to be reworked to use the option. This is reflected in the actual script, but not replicated here.

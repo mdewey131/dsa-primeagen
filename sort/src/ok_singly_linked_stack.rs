@@ -7,10 +7,7 @@ pub struct List {
 }
 
 /// The enum type describing the link between a Node and its following value
-enum Link {
-    Empty,
-    More(Box<Node>),
-}
+type Link = Option<Box<Node>>;
 
 /// The node that contains an element
 struct Node {
@@ -32,15 +29,15 @@ impl List {
             next: mem::replace(&mut self.head, Link::Empty),
         });
 
-        self.head = Link::More(new_node);
+        self.head = Some(new_node);
     }
 
     /// Remove an element from a list and give it here, Malfoy
     pub fn pop(&mut self) -> Option<i32> {
         // Same reasons as before, we have to do the dance here
         match mem::replace(&mut self.head, Link::Empty) {
-            Link::Empty => None,
-            Link::More(node) => {
+            None => None,
+            Some(node) => {
                 self.head = node.next;
                 Some(node.elem)
             }
@@ -51,7 +48,7 @@ impl List {
 impl Drop for List {
     fn drop(&mut self) {
         let mut cur_link = mem::replace(&mut self.head, Link::Empty);
-        while let Link::More(mut boxed_node) = cur_link {
+        while let Some(mut boxed_node) = cur_link {
             cur_link = mem::replace(&mut boxed_node.next, Link::Empty);
             // boxed node then goes out of scope and gets dropped here
             // however, it's Node's "next" field has been set to Link::Empty, so no unbounded 
