@@ -1,11 +1,11 @@
 pub mod bubble_sort;
+pub mod linked_lists;
+pub mod bad_single_linked_stack;
 use bubble_sort::bubble_sort;
-
+use linked_lists::*;
+use bad_single_linked_stack::*;
 
 fn main() {
-    let mut to_sort = [61, 3, 1, 2];
-    println!("Unsorted: {:?}", to_sort);
-    bubble_sort(&mut to_sort);
-    println!("Sorted: {:?}", to_sort);
+    
 
 }
