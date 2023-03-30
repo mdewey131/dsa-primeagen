@@ -40,10 +40,16 @@ impl<T> List<T>{
 
     /// Attempts to "peek" at an element in the linked list
     pub fn peek(&self) -> Option<&T> {
-        self.head.map(|node| {
+        self.head.as_ref().map(|node| {
             &node.elem
-    })
-}
+        })
+    }
+    /// Peeks mutably
+    pub fn peek_mut(&mut self) -> Option<&mut T> {
+        self.head.as_mut().map(|node| {
+            &mut node.elem
+        })
+    }
 }
 
 impl Drop for List<T> {
