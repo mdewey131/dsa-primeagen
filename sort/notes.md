@@ -12,3 +12,17 @@ So, we do N checks in the first case, N-1 in the second, N-2 in the third, and s
 Using the usual logic around addition of sequences such as this, there are N(N + 1) / 2 possible. You may think this goes to O(N^2 + N), but N is not considered a significant enough polynomial. So, bubble sort is O(N^2).
 
 Okay, let's do this.
+
+```
+pub fn bubble_sort(array: &mut [u32]) {
+    for i in 0..array.len() {
+        for j in 0..(array.len() - i - 1) {
+            if array[j] > array[j+1] {
+                array.swap(j, j+1);
+            }
+        }
+    }
+}
+```
+
+Note that the actual function has a lot more commenting and documentation of the logic. 
