@@ -1,4 +1,4 @@
-use std::{Rc, Box};
+use std::{rc::Rc, boxed::Box};
 /// My implementation of a doubly linked list in the basic box way
 /// Rc has to be used here because, in a doubly linked list, there
 /// need to be multiple pointers to the same data to handle
