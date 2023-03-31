@@ -163,3 +163,29 @@ pub fn peek(&self) -> Option<&T> {
     })
 }
 ```
+
+### Implementing IntoIter, Iter, and IterMut
+#### IntoIter
+Again, in the interest of adding functionality, we'll include the Iterator trait on the List we're working with. This has an associated type to know what it is supposed to put out from the use of the iterator. Interestingly, this is accomplished using a shallow struct wrapper over the list, and then implementing Iterator on that struct, as below:
+
+```
+pub struct IntoIter<T>(List<T>);
+
+impl<T> List<T> {
+    pub fn into_iter(self) -> IntoIter<T> {
+        IntoIter(self)
+    }
+}
+
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.pop()
+    }
+}
+```
+
+Notice that this is moving the ownership of the List into the iterator, in other words, consuming the thing we're iterating over.
+
+#### Iter
+In this case, we're not coercing the list into an iterator and consuming it, instead we're taking a pointer to each of the nodes, which can either exist or not (either because the list is empty or because we're on the last item of iteration). So, we'll have to use an Option. 
