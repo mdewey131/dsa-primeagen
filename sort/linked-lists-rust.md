@@ -215,14 +215,66 @@ impl <'a, T> Iterator for Iter<'a, T> {
     }
 }
 ```
+### IterMut
+This one is, apparently, WILD. Which scares me. 
 
+Semantically, implementing Iter and IterMut is fairly similar, but these go through dark magics due to requiring mutable references, which are not allowed to coexist.
 
+Our first pass will just change stuff from immutable to mutable. 
+```
+/// A struc that takes references to list nodes for iteration. Does not consume the list
+pub struct IterMut<'a, T> {
+    next: Option<&'a mut Node<T>>
+}
+impl<T> for List<T> {
+    /// Creates a IterMut object looking at the next element of the List
+    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
+        IterMut { next: self.head.as_deref_mut() }
+    }
+}
+impl<'a, T> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T;
 
+   fn next(&mut self) -> Option<Self::Item> {
+        self.next.map(|node| {
+            self.next = node.next.as_deref_mut();
+            &mut node.elem
+        })
+    }
+}
+impl<'a, T> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T;
 
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next.map(|node| {
+            self.next = node.next.as_deref_mut();
+            &mut node.elem
+        })
+    }
+}
+```
+Here is the error we get if we run this
+```
+cannot move out of `self.next` which is behind a mutable reference
+move occurs because `self.next` has type `Option<&mut Node<T>>`, which does not implement the `Copy` trait
+``` 
 
+This error actually shows a sneaky error present in the way we wrote the Iter implementation too!
 
+#### Borrowing and Ownership
+Ownership rules mean that, when you move stuff, you can't use it anymore. For some types, this is really good. For example, Box manages an allocation on the heap, and it would be bad if that spot of memory was dropped twice. However, this does not suit other types. i32, for example is just a number that are readily available and don't need that kind of allocation and deallocaction strategy. This is why integers are marked as Copy, a trait which means something can be perfectly recreated from bitwise copy, meaning we can reuse them after they move. This is why you don't need to move Copy out of a reference without replacement!
 
+All numeric primitives in rust are Copy, and any user-defined type can be Copy as long as all its components are Copy. 
 
+Shared references are another example of Copy! Since `&` is a Copy, `Option<&>` is also Copy. When we did `self.next.map` before, it was fine because the Option was just copied. But that strategy won't work here, because `&mut` isn't Copy (copying an &mut would give two different &mut's to the same location, which is unsafe). Instead, we should be `take`ing the Option to get it
 
+```
+fn next(&mut self) -> Option<Self::Item> {
+        self.next.take.map(|node| {
+            self.next = node.next.as_deref_mut();
+            &mut node.elem
+        })
+    }
 
-
+```
+And with that change, the whole thing works. We have IterMut!
