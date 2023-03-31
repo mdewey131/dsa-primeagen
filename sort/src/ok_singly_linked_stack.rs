@@ -35,7 +35,7 @@ impl<T> List<T>{
         self.head.take().map(|node| {
             self.head = node.next;
             Some(node.elem)
-        }).unwrap()
+        }).unwrap_or_else(|| None)
     }
 
     /// Attempts to "peek" at an element in the linked list
@@ -52,11 +52,11 @@ impl<T> List<T>{
     }
 }
 
-impl Drop for List<T> {
+impl<T> Drop for List<T> {
     fn drop(&mut self) {
         let mut cur_link = self.head.take();
         while let Some(mut boxed_node) = cur_link {
-            cur_link = mem::replace(&mut boxed_node.next, Link::Empty);
+            cur_link = boxed_node.next.take();
             // boxed node then goes out of scope and gets dropped here
             // however, it's Node's "next" field has been set to Link::Empty, so no unbounded 
             // recusion occurs within this while loop
@@ -94,4 +94,19 @@ mod test {
         assert_eq!(list.pop(), Some(4));
     }
     
+    #[test]
+    fn peek() {
+        let mut list = List::new();
+        assert_eq!(list.peek(), None);
+        assert_eq!(list.peek_mut(), None);
+        list.push(1); list.push(2); list.push(3);
+
+        assert_eq!(list.peek(), Some(&3));
+        assert_eq!(list.peek_mut(), Some(&mut 3));
+        list.peek_mut().map(|value| {
+            *value = 42
+        });
+        assert_eq!(list.peek(), Some(&42));
+        assert_eq!(list.pop(), Some(42));
+    }
 }
