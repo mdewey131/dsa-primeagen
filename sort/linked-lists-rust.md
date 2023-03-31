@@ -189,3 +189,40 @@ Notice that this is moving the ownership of the List into the iterator, in other
 
 #### Iter
 In this case, we're not coercing the list into an iterator and consuming it, instead we're taking a pointer to each of the nodes, which can either exist or not (either because the list is empty or because we're on the last item of iteration). So, we'll have to use an Option. 
+
+In fact, we still use the thin wrapper, but we also have to introduce lifetimes. Because we're trying to take a reference at every step of the iterator, we have to guarantee to the compiler that the list which is being referenced has to live at least as long as the iterator taking a reference from the list. That leads to the following type definitions and implentations:
+```
+/// A struc that takes references to list nodes for iteration. Does not consume the list
+pub struct Iter<'a, T> {
+    next: Option<&'a Node<T>>
+}
+impl<T> for List<T> {
+/// Creates a Iter object looking at the next element of the List
+    pub fn iter<'a>(&'a self) -> Iter<'a, T> {
+        // as_deref() allows us to move out of the box and get the node that's being expected
+        Iter { next: self.head.as_deref() }
+    }
+}
+
+impl <'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next.map(|node| {
+            self.next = node.next.as_deref();
+            &node.elem
+        })
+    }
+}
+```
+
+
+
+
+
+
+
+
+
+
+
