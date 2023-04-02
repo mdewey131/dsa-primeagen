@@ -278,3 +278,53 @@ fn next(&mut self) -> Option<Self::Item> {
 
 ```
 And with that change, the whole thing works. We have IterMut!
+
+# 3. A Persistent Singly-Linked Stack
+Now, we'll move from single ownership to shared ownership by writing a persistent immutable singly linked list. This is the same list that is used in functional programming languages. This is equally introduction to `Rc` and `Arc` as it is introduction to the next chapter, which changes things a lot. 
+
+## Layout
+The most important thing about a persistent list is that you can manipulate the tails of the lists basically for free.
+
+For example, you might see this kind of thing
+
+```
+list1 = A -> B -> C -> D
+list2 = tail(list1) = B -> C -> D
+list3 = push(list2, x) = X -> B -> C -> D
+```
+But, at the end we want the memory to look like this from those operations:
+```
+list1 -> A ---+
+              |          
+              |
+list2 ------->B -> C -> D
+              |
+              |          
+list3 -> X ---+
+```
+
+Boxes can't do this, because the ownership of B is shared in this memory model. This kind of problem is what is usually solved with garbage collection. Rust doesn't have anything like that, but it does have reference counting, which can be thought of like a very simply GC. 
+
+The Rc type is just like Box, but it can be duplicated, and the memory gets freed when all the RCs are dropped. This flexibility does come at a cost, however: we can only take a shared reference to its internals, meaning we can never really get data out of one of our lists, nor can we mutate them. 
+
+Changing our implementation starts with copying the singly linked list over and find-replacing Box with Rc
+```
+pub struct List<T> {
+    head: Link<T>,
+}
+
+type Link<T> = Option<Rc<Node<T>>>;
+
+struct Node<T> {
+    elem: T,
+    next: Link<T>
+}
+
+impl<T> List<T> {
+    pub fn new() -> Self {
+        List {head: None }
+    }
+}
+```
+
+However, instead of 
