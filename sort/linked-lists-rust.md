@@ -379,3 +379,32 @@ Interior mutability types violate that idea; they let you mutate through a share
 Cells, naturally, are cheaper to use. 
 
 So, what does this all have to do with Rc and Arc? Both utilize interior mutability for their refernce count! Worse, this reference count is shared between every instance. Rc just uses a cell, which means it's not thread safe. Arc uses an atomic, which means it is thread-safe. You can't magically make a type thread safe by putting it into an Arc. Arc can only derive thread-safety, like any other type. 
+
+# A Bad but Safe Doubly Linked Deque
+This chapter mostly exists to show why doing this approach is a bad idea. 
+
+The key to this design is the `RefCell` type, which has a pair of methods that allow for borrowing and mutable borrowing. These function identically to the normal borrowing rules, except these are enforced at runtime rather than comppile time. RefCell will panic and crash a program if you break the rules. 
+
+With the power of Rc and RefCell together, we have the power to make "an incredibly verbose pervasively mutable garbage collected langauge that can't collect cycles"... yay?
+
+Since we're making this doubly linked, each node will have a pointer to the previous and next node. Also, the list itself will have a pointer to the first and last node. This gives us fast insertion and removal on both ends of the list
+
+Here's our first effort at this:
+```
+use std::rc::Rc;
+use std::cell::RefCell;
+
+pub struct List<T> {
+    head: Link<T>,
+    tail: Link<T>
+}
+
+type Link<T> = Option<Rc<RefCell<Node<T>>>>;
+
+struct Node<T> {
+    elem: T,
+    next: Link<T>,
+    prev: Link<T>,
+}
+```
+
