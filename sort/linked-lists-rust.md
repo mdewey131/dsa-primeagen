@@ -328,3 +328,54 @@ impl<T> List<T> {
 ```
 
 However, instead of 
+
+## Implement Drop
+Previously, we solved the problem of Drop by doing something like this with a mutable list
+```
+impl<T> Drop for List<T> {
+    fn drop(&mut self) {
+        let mut cur_link = self.head.take();
+        while let Some(mut boxed_node) = cur_link {
+            cur_link = boxed_node.next.take();
+        }
+    }
+}
+```
+
+However, that cur_link won't work anymore. cur_link = boxed_node.next.take() is mutating the Node inside the Box, but RC doesn't let us do that! We need to rely on shared access, because any number of otehr Rc's might be pointing at the same memory.
+
+But, if we know that we're the last list that knows about this node, it woud actually be fine to move the Node out of the Rc. Then, we could also know when to stop (viz. whenever we can't hoist out of the Node). As it turns out, Rc's `try_unwrap()` method does exactly this
+```
+impl<T> Drop for List<T> {
+    fn drop(&mut self) {
+        let mut head = self.head.take();
+        while let Some(node) = head {
+            if let Ok(mut node) = Rc::try_unwrap(node) {
+                head = node.next.take();
+            } else {
+                break;
+            }
+        }
+    }
+}
+```
+
+## Including Arc
+One reason that you'd want to use an immutable linked list is to share data across threads. After all, shared mutable state is the root of all evil. The problem is that our current implementation is not thread safe at all. Two threads, at this point, could try to increment the reference count, and only one would happen, which could result in the list being freed sooner than it should be, and then you have a use after freed error. 
+
+In order to get thread safety, we have to use Arc. Arc is completely identical to Rc, but reference counts are modified atomically. The reason why there's even a separate way to do this is simple - atomic reference counting has overhead that Rc does not, so reach for Rc if your program is single-threaded. 
+
+This book makes the claim that "you can't mess up thread-safety in Rust", which, like, idk about that one chief. The claim rests on the idea that rust models thread-safety in a first-class way with the traits Send and Sync.
+A type is Send if it's safe to move to another thread. A type is Sync if it is safe to share between multiple threads. That is, if type `T` is Sync, then `&T` is Send. 
+
+Sync and Send are marker traits, so they do not carry any kind of implementations. Send and Sync are automatically derived traits based on whether a product type is totally composed of Send and Sync types. This is similar to how you can only implement Copy if you're made of Copy. 
+
+Almost every type is Send and Sync. Most types are Send because they totally own their data. Most types are Sync because the only way to share data across threads is to put them behind a shared reference, which is what makes them immutable! However, there are special types that violate this property via *interior mutability*. Most of what we've dealt with so far has been *inherited mutability*, aka external mutability. In external mutability, the mutability of a value is inherited from the mutability of its container. That is to say, you can't just mutate some field of a non-mutable value just because you feel like it. 
+
+Interior mutability types violate that idea; they let you mutate through a shared reference. There are two major classes of interior mutability:
+1. Cells, which only work in a single-threaded context
+2. Locks, which work in a multi-threaded context. 
+
+Cells, naturally, are cheaper to use. 
+
+So, what does this all have to do with Rc and Arc? Both utilize interior mutability for their refernce count! Worse, this reference count is shared between every instance. Rc just uses a cell, which means it's not thread safe. Arc uses an atomic, which means it is thread-safe. You can't magically make a type thread safe by putting it into an Arc. Arc can only derive thread-safety, like any other type. 
