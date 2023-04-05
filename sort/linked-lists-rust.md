@@ -407,4 +407,100 @@ struct Node<T> {
     prev: Link<T>,
 }
 ```
+ This will compile, but with a lot of dead code warnings
 
+## Building Up
+Let's start building the list. As always, we'll use some `new()` implementations that begin with None values. We'll start by breaking out a Node constructor
+```
+impl<T> Node<T> {
+    fn new(elem: T) -> Rc<RefCell<Self>> {
+        Rc::new(RefCell::new(Node {
+            elem,
+            prev: None,
+            next: None,
+        }))
+    }
+}
+
+impl<T> List<T> {
+    pub fn new() -> Self {
+        List {head: None, tail: None}
+    }
+}
+```
+
+Now, let's try to wrrite pushing onto the front of the list. Because doubly-linked lists are more complicated, this is going to require more work. In particular, we now need to introduce special handling around the boundary case of empty lists. Most operations will only touch the head or the tail. However, the empty requires editing both. 
+
+An easy way for us to validate if our methods make sense is to maintain the following invariant: each node should have exactly two pointers to it. Each node in the middle of the list is pointed to by its successor and its predecessor, while the nodes on the ends are pointed to by the list itself. 
+
+Let's try that approach
+```
+pub fn push_front(&mut self, elem: T) {
+        // New Node needs +2 links, everything else should be +0
+        let new_head = Node::new(elem);
+
+        match self.head.take() {
+            Some(old_head) => {
+                // Non-empty list, need to connect the old head
+                old_head.prev = Some(new_head.clone()); // +1 new head
+                new_head.next = Some(old_head);         // +1 old head
+                self.head = Some(new_head);             // +1 new head, -1 old head
+            },
+            None => {
+                self.tail = Some(new_head.clone());
+                self.head = Some(new_head);
+            }
+        }
+    }
+```
+This function attempts to mutate the old head and the new head by accessing their fields. Unfortunately, that approach, so common in other applications, will not work here. The reason is because RefCells only allow you change the values inside of the cell with it's runtime borrowing patterns. In other words, you cannot mutate the value of the interior portion just because you want to, as we described earlier. 
+
+So, let's utilize the `borrow_mut` method on the field in order to actually mutate the value inside.
+```
+pub fn push_front(&mut self, elem: T) {
+        // New Node needs +2 links, everything else should be +0
+        let new_head = Node::new(elem);
+
+        match self.head.take() {
+            Some(old_head) => {
+                // Non-empty list, need to connect the old head
+                old_head.borrow_mut().prev = Some(new_head.clone()); // +1 new head
+                new_head.borrow_mut().next = Some(old_head);         // +1 old head
+                self.head = Some(new_head);                          // +1 new head, -1 old head
+            },
+            None => {
+                self.tail = Some(new_head.clone());
+                self.head = Some(new_head);
+            }
+        }
+    }
+```
+
+## Breaking Down
+Now, let's try to add a function that removes an element from the front of the list
+```
+pub fn pop_front(&mut self) -> Option<T> {
+        // need to take the old head, ensuring that it's -2
+        self.head.take().map(|old_head| {    // -1 old
+            match old_head.borrow_mut().next.take() {
+                Some(new_head) => {          // -1 new
+                    // not emptying list
+                    new_head.borrow_mut().prev.take();             // -1 old
+                    self.head = Some(new_head);                    // +1 new
+                    // total: -2 old, +0 new
+                }
+                none => {
+                    //emptying list
+                    self.tail.take();                             // -1 old
+                    // total: -2 old, no new
+                }
+            }
+            // now, we want to return the old_head's inner element. but there's a problem. since 
+            // this is inside an rc, which by definition doesn't like things being removed from it, we need
+            // to try and get it out with `try_unwrap()`, which should give us the correct value since there is 
+            // now only one strong reference to the old_head (since we've taken it out of the list structure)
+            Rc::try_unwrap(old_head).ok().unwrap().into_inner().elem
+        })
+    }
+```
+Pay special attention to that bottom comment block. Pulling out from this Rc is really tedious, but this is how you might accomplish it. 
