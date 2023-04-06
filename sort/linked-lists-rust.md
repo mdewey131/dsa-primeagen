@@ -504,3 +504,38 @@ pub fn pop_front(&mut self) -> Option<T> {
     }
 ```
 Pay special attention to that bottom comment block. Pulling out from this Rc is really tedious, but this is how you might accomplish it. 
+
+## Peeking
+Now, we're going to do some work to implement peeking, but since this is a doubly linked list, we'll need to speak about both ends of the list. To start, let's just work on getting something from the front
+
+```
+/// Looks at the first element of the list
+    pub fn peek_front(&self) -> Option<&T> {
+        self.head.as_ref().map(|node| {
+            &node.borrow().elem
+        })
+    }
+```
+This... won't work. And the reason why is actually really interesting. Code like this creates errors because of lifetimes. You see, the functions borrow() and borrow_mut(), even though they behave exactly like &T and &mut T respectively, have to be connected to lifetimes because they are enforced at runtime, not compile time. Specifically, the reference that gets returned by borrow is connected to the lifetime of the Ref, and not the RefCell. This means that the Ref has to be sitting around for as long as the reference we're creating. 
+
+That probably sounds tedious and a bit annoying. It is that, but there's also good reason for it to work this way. When a Ref gets dropped, it tells the RefCell that it's not borrowed anymore. So if we did manage to hold onto our reference longer than the Ref existed, we could get a RefMut while a reference was kicking around and totally fook ourselves. Earlier in the book, it was mentioned that Refs are like Rc's for borrowing. This is where that's relevant, because the exact same thing would be true if we were talking about Rcs and freeing them before we ought to.
+
+So, where does this leave us with peek_front? We're not going to easily be able to return refs. However, there is a map based solution that will work for us. Look at this function signature for map
+
+```
+map<U, F>(orig: Ref<'b, T>, f: F) -> Ref<'b, U>
+    where F: FnOnce(&T) -> &U,
+          U: ?Sized
+```
+
+So, this signature says "take a ref of lifetime b with type T, and return a ref of lifetime b with type U, using a function F that converts &T to &U". In other words, this makes a new Ref for a component of the borrowed data. 
+
+```
+pub fn peek_front(&self) -> Option<Ref<T>> {
+        self.head.as_ref().map(|node| {
+            Ref::map(node.borrow(), |node| &node.elem)
+        })
+    }
+```
+
+This will work!

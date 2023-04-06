@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 
 pub struct List<T> {
     head: Link<T>,
@@ -70,5 +70,26 @@ impl<T> List<T> {
             // now only one strong reference to the old_head (since we've taken it out of the list structure)
             Rc::try_unwrap(old_head).ok().unwrap().into_inner().elem
         })
+    }
+
+    /// Looks at the first element of the list
+    pub fn peek_front(&self) -> Option<Ref<T>> {
+        self.head.as_ref().map(|node| {
+            Ref::map(node.borrow(), |node| &node.elem)
+        })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn peek() {
+        let mut list = List::new();
+        assert!(list.peek_front().is_none());
+        list.push_front(1); list.push_front(2); list.push_front(3);
+
+        assert_eq!(&*list.peek_front().unwrap(), &3);
     }
 }

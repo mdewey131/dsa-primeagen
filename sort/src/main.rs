@@ -9,7 +9,8 @@ use linked_lists::*;
 use bad_doubly_linked_deque::*;
 //use bad_single_linked_stack::*;
 //use ok_singly_linked_stack::*;
-use persistent_stack::*;
+//use persistent_stack::*;
+use bad_doubly_linked_deque::*;
 fn main() {
    let list: List<Option<i32>> = List::new();
 
